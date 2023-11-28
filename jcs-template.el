@@ -40,6 +40,12 @@
   :group 'faces
   :link '(url-link :tag "Github" "https://github.com/jcs-emacs/jcs-etemplate"))
 
+(defcustom jcs-template-path
+  "__header"
+  "Path to header relative to file-header."
+  :type 'string
+  :group 'jcs-template)
+
 (defcustom jcs-template-headers
   '("d-colon"
     "d-dash"
@@ -144,7 +150,7 @@ If optional argument FORCE is non-nil, refresh cache once."
   (when (or force (null jcs-template--headers-loaded-p))
     (dolist (header jcs-template-headers)
       (set (intern (concat "jcs-template--header-" header))
-           (file-header-template-string (format "__header/%s.txt" header))))
+           (file-header-template-string (format "%s/%s.txt" jcs-template-path header))))
     (setq jcs-template--headers-loaded-p t)))
 
 ;;
