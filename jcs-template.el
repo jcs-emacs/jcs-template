@@ -40,6 +40,63 @@
   :group 'faces
   :link '(url-link :tag "Github" "https://github.com/jcs-emacs/jcs-etemplate"))
 
+(defcustom jcs-template-headers
+  '("d-colon"
+    "d-dash"
+    "d-double-quote"
+    "d-semicolon"
+    "d-slash"
+    "d-percent"
+    "t-slash"
+    "c-style"
+    "sharp"
+    "semicolon"
+    "d-single-quote"
+    "tag"
+    "percent")
+  "List of template headers."
+  :type 'list
+  :group 'jcs-template)
+
+;;
+;; (@* "Util" )
+;;
+
+(defun jcs-current-file-empty-p (&optional fn)
+  "Check if the FN an empty file."
+  (if fn (with-current-buffer fn (and (bobp) (eobp)))
+    (and (bobp) (eobp))))
+
+(defun jcs-string-compare-p (regexp str type &optional ignore-case)
+  "Compare STR with REGEXP by TYPE.
+
+Argument TYPE can be on of the following symbol.
+
+  * regex - uses function `string-match-p'.  (default)
+  * strict - uses function `string='.
+  * prefix - uses function `string-prefix-p'.
+  * suffix - uses function `string-suffix-p'.
+
+Optional argument IGNORE-CASE is only uses when TYPE is either symbol `prefix'
+or `suffix'."
+  (cl-case type
+    (`strict (string= regexp str))
+    (`prefix (string-prefix-p regexp str ignore-case))
+    (`suffix (string-suffix-p regexp str ignore-case))
+    (t (ignore-errors (string-match-p regexp str)))))
+
+(defun jcs-contain-list-type-str (elt list type &optional reverse)
+  "Return non-nil if ELT is listed in LIST.
+
+Argument TYPE see function `jcs-string-compare-p' for more information.
+
+If optional argument REVERSE is non-nil, LIST item and ELT argument."
+  (cl-some
+   (lambda (elm)
+     (if reverse (jcs-string-compare-p elt elm type)
+       (jcs-string-compare-p elm elt type)))
+   list))
+
 ;;
 ;; (@* "Insertion" )
 ;;
@@ -72,47 +129,8 @@ FAILED is callback if does NOT successfully inserted header content."
     result))
 
 ;;
-;; (@* "Buffer String" )
+;; (@* "Core" )
 ;;
-
-(defvar jcs-template--header-double-colon nil
-  "Preload the double colon file info template.")
-
-(defvar jcs-template--header-double-dash nil
-  "Preload the double dash file info template.")
-
-(defvar jcs-template--header-double-quote nil
-  "Preload the double quote file info template.")
-
-(defvar jcs-template--header-double-semicolon nil
-  "Preload the double semicolon file info template.")
-
-(defvar jcs-template--header-double-slash nil
-  "Preload the double slash file info template.")
-
-(defvar jcs-template--header-double-percent nil
-  "Preload the double percent file info template.")
-
-(defvar jcs-template--header-triple-slash nil
-  "Preload the triple slash file info template.")
-
-(defvar jcs-template--header-c-style nil
-  "Preload the global file info template.")
-
-(defvar jcs-template--header-sharp nil
-  "Preload the sharp file info template.")
-
-(defvar jcs-template--header-semicolon nil
-  "Preload the semicolon file info template.")
-
-(defvar jcs-template--header-single-quote nil
-  "Preload the single quote file info template.")
-
-(defvar jcs-template--header-tag nil
-  "Preload the tag file info template.")
-
-(defvar jcs-template--header-percent nil
-  "Preload the percent file info template.")
 
 (defvar jcs-template--headers-loaded-p nil
   "Return non-nil, if headers are loaded as cache.")
@@ -124,104 +142,29 @@ FAILED is callback if does NOT successfully inserted header content."
 If optional argument FORCE is non-nil, refresh cache once."
   (interactive)
   (when (or force (null jcs-template--headers-loaded-p))
-    (setq jcs-template--header-double-colon (file-header-template-string "__header/d_colon.txt")
-          jcs-template--header-double-dash (file-header-template-string "__header/d_dash.txt")
-          jcs-template--header-double-quote (file-header-template-string "__header/d_quote.txt")
-          jcs-template--header-double-semicolon (file-header-template-string "__header/d_semicolon.txt")
-          jcs-template--header-double-slash (file-header-template-string "__header/d_slash.txt")
-          jcs-template--header-double-percent (file-header-template-string "__header/d_percent.txt")
-          jcs-template--header-triple-slash (file-header-template-string "__header/t_slash.txt")
-          jcs-template--header-c-style (file-header-template-string "__header/c_style.txt")
-          jcs-template--header-semicolon (file-header-template-string "__header/semicolon.txt")
-          jcs-template--header-sharp (file-header-template-string "__header/sharp.txt")
-          jcs-template--header-single-quote (file-header-template-string "__header/singlequote.txt")
-          jcs-template--header-tag (file-header-template-string "__header/tag.txt")
-          jcs-template--header-percent (file-header-template-string "__header/percent.txt")
-          jcs-template--headers-loaded-p t)))
+    (dolist (header jcs-template-headers)
+      (set (intern (concat "jcs-template--header-" header))
+           (file-header-template-string (format "__header/%s.txt" header))))
+    (setq jcs-template--headers-loaded-p t)))
 
 ;;
 ;; (@* "Header" )
 ;;
 
 ;;;###autoload
-(defun jcs-template-header-double-colon ()
-  "Return the preloaded double colon file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-colon))
+(defmacro jcs-template-define-header (name)
+  "Define template header by NAME."
+  (let ((var  (intern (concat "jcs-template--header-" name)))
+        (func (intern (concat "jcs-template-header-" name))))
+    `(progn
+       (defvar ,var nil
+         ,(format "Preload the %s header template." name))
+       (defun ,func nil
+         ,(format "Return the preload %s header template." name)
+         (file-header-swap-keyword-template ,var)))))
 
-;;;###autoload
-(defun jcs-template-header-double-dash ()
-  "Return the preloaded double dash file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-dash))
-
-;;;###autoload
-(defun jcs-template-header-double-quote ()
-  "Return the preloaded double quote file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-quote))
-
-;;;###autoload
-(defun jcs-template-header-double-semicolon ()
-  "Return the preloaded double semicolon file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-semicolon))
-
-;;;###autoload
-(defun jcs-template-header-double-slash ()
-  "Return the preloaded double slash file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-slash))
-
-;;;###autoload
-(defun jcs-template-header-triple-slash ()
-  "Return the preloaded triple slash file info template."
-  (file-header-swap-keyword-template jcs-template--header-triple-slash))
-
-;;;###autoload
-(defun jcs-template-header-c-style ()
-  "Return the preloaded c-style file info template."
-  (file-header-swap-keyword-template jcs-template--header-c-style))
-
-;;
-;;; ;
-
-;;;###autoload
-(defun jcs-template-header-semicolon ()
-  "Return the preloaded semicolon file info template."
-  (file-header-swap-keyword-template jcs-template--header-semicolon))
-
-;;
-;;; #
-
-;;;###autoload
-(defun jcs-template-header-sharp ()
-  "Return the preloaded sharp file info template."
-  (file-header-swap-keyword-template jcs-template--header-sharp))
-
-;;
-;;; '
-
-;;;###autoload
-(defun jcs-template-header-single-quote ()
-  "Return the preloaded single quote file info template."
-  (file-header-swap-keyword-template jcs-template--header-single-quote))
-
-;;
-;;; <!-- -->
-
-;;;###autoload
-(defun jcs-template-header-tag ()
-  "Return the preloaded tag file info template."
-  (file-header-swap-keyword-template jcs-template--header-tag))
-
-;;
-;;; %
-
-;;;###autoload
-(defun jcs-template-header-double-percent ()
-  "Return the preloaded double percent file info template."
-  (file-header-swap-keyword-template jcs-template--header-double-percent))
-
-;;;###autoload
-(defun jcs-template-header-percent ()
-  "Return the preloaded percent file info template."
-  (file-header-swap-keyword-template jcs-template--header-percent))
+(dolist (header jcs-template-headers)
+  (eval `(jcs-template-define-header ,header)))
 
 (provide 'jcs-template)
 ;;; jcs-template.el ends here
