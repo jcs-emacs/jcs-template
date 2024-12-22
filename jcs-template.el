@@ -65,46 +65,11 @@
   :group 'jcs-template)
 
 ;;
-;; (@* "Util" )
+;; (@* "Externals" )
 ;;
 
-;;;###autoload
-(defun jcs-current-file-empty-p (&optional fn)
-  "Check if the FN an empty file."
-  (if fn (with-current-buffer fn (and (bobp) (eobp)))
-    (and (bobp) (eobp))))
-
-;;;###autoload
-(defun jcs-string-compare-p (regexp str type &optional ignore-case)
-  "Compare STR with REGEXP by TYPE.
-
-Argument TYPE can be on of the following symbol.
-
-  * regex - uses function `string-match-p'.  (default)
-  * strict - uses function `string='.
-  * prefix - uses function `string-prefix-p'.
-  * suffix - uses function `string-suffix-p'.
-
-Optional argument IGNORE-CASE is only uses when TYPE is either symbol `prefix'
-or `suffix'."
-  (cl-case type
-    (`strict (string= regexp str))
-    (`prefix (string-prefix-p regexp str ignore-case))
-    (`suffix (string-suffix-p regexp str ignore-case))
-    (t (ignore-errors (string-match-p regexp str)))))
-
-;;;###autoload
-(defun jcs-contain-list-type-str (elt list type &optional reverse)
-  "Return non-nil if ELT is listed in LIST.
-
-Argument TYPE see function `jcs-string-compare-p' for more information.
-
-If optional argument REVERSE is non-nil, LIST item and ELT argument."
-  (cl-some
-   (lambda (elm)
-     (if reverse (jcs-string-compare-p elt elm type)
-       (jcs-string-compare-p elm elt type)))
-   list))
+(declare-function jcs-current-file-empty-p "ext:jcs-util.el")
+(declare-function jcs-member "ext:jcs-util.el")
 
 ;;
 ;; (@* "Insertion" )
@@ -130,7 +95,7 @@ FAILED is callback if does NOT successfully inserted header content."
   (let (result)
     (when (and buffer-file-name
                (not (file-exists-p buffer-file-name))
-               (jcs-contain-list-type-str (f-filename buffer-file-name) reg-lst 'regex))
+               (jcs-member (f-filename buffer-file-name) reg-lst 'regex))
       (setq result (jcs-insert-header-if-empty insert-func interactive)))
     (if result
         (when (functionp success) (funcall success))
