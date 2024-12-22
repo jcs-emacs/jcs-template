@@ -68,11 +68,13 @@
 ;; (@* "Util" )
 ;;
 
+;;;###autoload
 (defun jcs-current-file-empty-p (&optional fn)
   "Check if the FN an empty file."
   (if fn (with-current-buffer fn (and (bobp) (eobp)))
     (and (bobp) (eobp))))
 
+;;;###autoload
 (defun jcs-string-compare-p (regexp str type &optional ignore-case)
   "Compare STR with REGEXP by TYPE.
 
@@ -91,6 +93,7 @@ or `suffix'."
     (`suffix (string-suffix-p regexp str ignore-case))
     (t (ignore-errors (string-match-p regexp str)))))
 
+;;;###autoload
 (defun jcs-contain-list-type-str (elt list type &optional reverse)
   "Return non-nil if ELT is listed in LIST.
 
