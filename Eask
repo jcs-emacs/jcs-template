@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "jcs-template"
          "0.1.0"
          "Template module for jcs-emacs")
